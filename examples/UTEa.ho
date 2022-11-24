@@ -1,0 +1,73 @@
+Algorithm UTEa;
+Variable
+	V x;
+	V' vote = ?;
+	hidden V tmpX;
+	hidden VArray sortedX;
+	hidden int i,j,cnt,maxcnt;
+	hidden constant T,E,a;
+Conditions{
+	assert(E < N && E >= N/2+a);
+	assert(T < N && T >= N/2+a);
+	assert(ahosize <= a);				/* 条件非常宽松，所有进程都可能发送错误消息，没有进程一定是正确进程 */
+	assert(shosize > N+2*a-E-1 && shosize > T && shosize > a);
+};
+Round {
+	SendPart
+		send(<x>, All);
+	TransitionPart
+		maxcnt = 0;
+		tmpX = NULL;
+		for[ i = 1 to N-1 ] {
+			if(rcv[i].x != NULL){
+				cnt = 1;
+				for[ j = i+1 to N ] {
+					if(rcv[j].x == rcv[i].x){
+						cnt = cnt+1;
+						if(cnt > maxcnt){
+							maxcnt = cnt;
+							tmpX = rcv[i].x;
+						};
+					};
+				};
+			};
+		};
+		if(maxcnt > T && tmpX != NULL)
+			vote = tmpX;
+};
+Round{
+	SendPart
+		send(<vote>, All);
+	TransitionPart
+		maxcnt = 0;
+		tmpX = NULL;
+		for[ i = 1 to N-1 ] {
+			if(rcv[i].vote != NULL && rcv[i].vote != ?){
+				cnt = 1;
+				for[ j = i+1 to N ]
+					if(rcv[j].vote == rcv[i].vote)
+						cnt = cnt+1;
+				if(cnt > maxcnt){
+					maxcnt = cnt;
+					tmpX = rcv[i].vote;
+				};
+			};
+		};
+		if(maxcnt >= a+1)			/* x = v0 理解为保持原变量 */
+			x = tmpX;
+		if(maxcnt > E)
+			DECIDE(tmpX);
+		vote = ?;
+};
+Invariant {
+	for[i = 1 to N]
+		assume(vote[i] == ?);
+};
+Univalence{
+	cnt = 0;
+	for [ i = 1 to N ] {
+		if(x[i] == v)
+			cnt = cnt + 1 ;
+	};
+	assert(cnt>E-a);
+};

@@ -1,0 +1,55 @@
+Algorithm OneThirdRule;
+Variable
+	V x = Vp;
+	hidden V tmpX;
+	hidden VArray sortedX;
+	hidden intArray cntX;
+	hidden int i, j,maxcnt,cnt,validcnt;
+Conditions{
+	assert(hosize == shosize);
+};
+
+Round {
+	SendPart
+		send(<x>, All);
+	TransitionPart
+		if(hosize > 2/3*N){
+			for [ i = 1 to N ] {
+				sortedX[i] = rcv[i].x;
+				cntX[i] = 1;
+			};
+			for [ i = 1 to N - 1 ] {							/* 从小到大冒泡排序，NULL放在最后 */
+				for [ j = 1 to N - i ] {
+					if ( sortedX[j] == NULL || (sortedX[j+1]!=NULL && sortedX[j]>sortedX[j+1]) ) {
+						tmpX = sortedX[j];
+						sortedX[j] = sortedX[j+1];
+						sortedX[j+1] = tmpX;
+					};
+				};
+			};
+			tmpX = sortedX[1];									/* sortedX[1]一定不为NULL */
+			maxcnt = 1;
+			for[ i = 2 to N ] {
+				if( sortedX[i] != NULL && sortedX[i] == sortedX[i-1]){
+					cntX[i] = cntX[i-1]+1;
+					if(cntX[i] > maxcnt){
+						maxcnt = cntX[i];
+						tmpX = sortedX[i];
+					};
+				};
+			};
+			x = tmpX;												/* tmpX是收到次数最多的x中最小的x */
+			if(maxcnt > 2*N/3)
+				DECIDE(x);
+		};
+};
+
+Univalence {
+	cnt = 0;
+	for [ i = 1 to N ] {
+		if(x[i] == v){
+			cnt = cnt + 1 ;
+		};
+	};
+	assert(cnt > 2*N/3);
+};

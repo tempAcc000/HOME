@@ -1,0 +1,86 @@
+Algorithm BenOr;
+Variable
+	V x;
+	V' vote;
+	hidden V tmpX;		
+	hidden int i, j, maxcnt,cnt,cntD;
+	hidden constant t;
+Conditions{
+	assert(x >= 0 && x <= 1);	/* binary consensus */
+	assert(vote == 0 || vote == 1 || vote == ?);
+	assert(rand >= 0 && rand <= 1);
+	assert(t >= 0 && N > 5 * t);
+	assert(hosize >= N - t);	/* wait until N-t message */
+	assert(assize <= t);		/* number of faulty processes */
+};
+Round {
+	SendPart
+		send(<x>, All);
+	TransitionPart
+		maxcnt = 0;
+		tmpX = NULL;
+		for[ i = 1 to N-1 ] {
+			if(rcv[i].x != NULL){
+				cnt = 1;
+				for[ j = i+1 to N ]{
+					if(rcv[j].x == rcv[i].x)
+						cnt=cnt+1;
+				};
+				if(cnt > maxcnt){
+					maxcnt = cnt;
+					tmpX = rcv[i].x;
+				};
+			};
+		};
+		if(maxcnt>(N+t)/2)
+			vote = tmpX;
+};
+
+Round {
+	SendPart
+		send(<vote>, All);
+	TransitionPart
+		cntD = 0;
+		maxcnt = 0;
+		tmpX = NULL;
+		for[ i = 1 to N-1 ] {
+			if(rcv[i].vote!=NULL && rcv[i].vote!=?){
+				cnt = 1;
+				cntD = cntD + 1;
+				for[ j = i+1 to N ]{
+					if(rcv[j].vote == rcv[i].vote)
+						cnt=cnt+1;
+				};
+				if(cnt>maxcnt){
+					maxcnt=cnt;
+					tmpX=rcv[i].vote;
+				};
+			};
+		};
+		
+		if(maxcnt >= t+1){
+			x = tmpX;
+			if(cntD > (N+t)/2)
+				DECIDE(x);
+		}
+		else
+			x = rand;
+		vote = ?;
+};
+
+Invariant {
+	for [i = 1 to N ]{
+		assume(vote[i] == ?);
+	};
+};
+
+Univalence {
+	cnt = 0;
+	for [ i = 1 to N ] {
+		if(x[i] == v && iscorrect[i] ){
+			cnt = cnt + 1 ;
+		};
+	};
+	assert(cnt > (N+3*t)/2);
+};
+

@@ -1,0 +1,99 @@
+Algorithm LastVoting;
+Variable
+	V x = Vp;
+	V' vote = ?;
+	bool commit = false;
+	bool ready = false;
+	TS ts = 0;
+	hidden V tmpX;
+	hidden VArray sortedX;
+	hidden TS tmpTs;
+	hidden TSArray sortedTs;
+	hidden int i, j, idx;
+Conditions{
+	assert(shosize==hosize);
+};
+Round {
+	SendPart
+		send(<x,ts>, Coord);
+	TransitionPart
+		if (isCoord && hosize > N/2) {
+			tmpTs = NULL;
+			for [ i = 1 to N ] {
+				if (tmpTs == NULL || (rcv[i].ts != NULL && rcv[i].ts > tmpTs) ) {
+					tmpTs = rcv[i].ts;
+					idx = i;
+				};
+			};
+			vote = rcv[idx].x;
+			commit = true;
+		};
+};
+
+Round {
+	SendPart
+		if (isCoord && commit) 
+			send(<vote>, All);
+	TransitionPart
+		for [ i = 1 to N ] {	/* message from coordinator */
+			if (rcv[i].vote != NULL && Coord == i) {
+				x = rcv[i].vote;
+				ts = phase;
+			};
+		};
+};
+
+Round {
+	SendPart
+		if (ts == phase) 
+			send(<ack>, Coord);
+	TransitionPart
+		if (isCoord && hosize > N/2) {
+			ready = true;
+		};
+};
+
+Round {
+	SendPart
+		if (isCoord && ready) send(<vote>, All);
+	TransitionPart
+		for [ i = 1 to N ] {
+			if (rcv[i].vote != NULL && Coord == i) {
+				DECIDE(rcv[i].vote);
+			};
+		};
+		if (isCoord) {
+			ready = false;
+			commit = false;
+		};
+};
+
+Invariant {
+	for [ i = 1 to N ] {
+		assume(commit[i] == false);
+		assume(ready[i] == false);
+		assume(ts[i] < phase);
+	};
+};
+
+Univalence {
+	for [ i = 1 to N ] {
+		sortedX[i] = x[i];
+		sortedTs[i] = ts[i];
+	};
+	for [ i = 1 to N - 1 ] {
+		for [ j = 1 to N - i ] {
+			if ( sortedTs[j] < sortedTs[j+1] || (sortedTs[j] == sortedTs[j+1] && sortedX[j+1] == v) ) {
+				tmpTs = sortedTs[j];
+				sortedTs[j] = sortedTs[j+1];
+				sortedTs[j+1] = tmpTs;
+				tmpX = sortedX[j];
+				sortedX[j] = sortedX[j+1];
+				sortedX[j+1] = tmpX;
+			};
+		};
+	};
+	for [i = 1 to N] {
+		assert((sortedX[i] == v) || (i > N/2 + 1) && (sortedTs[N/2 + 1] > sortedTs[i]));
+	};
+};

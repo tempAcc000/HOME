@@ -1,0 +1,74 @@
+Algorithm RSBosco;
+Variable
+	V x;
+	V' candidate;
+	bool sendcandidate;
+	hidden V tmpX;
+	hidden int i, j, maxcnt,cnt;
+	hidden constant t;
+Conditions{
+	assert(x >= 0 && x <= 1);								/* RSBosco 是二元共识算法 */
+	assert(candidate == 0 || candidate==1 || candidate == ?);
+	assert(rand >= 0 && rand <= 1);
+	assert(t >= 0 && N > 7*t);								/* RSBosco在n>7t时是强一步的 */
+	assert(hosize >= N-t);									/* 每个round都要收集到N-t以上的消息，因此hosize>=N-t */
+	assert(assize <= t);
+};
+
+Round {
+	SendPart
+		send(<x>, All);								/* VOTE */
+	TransitionPart
+		maxcnt=0;
+		tmpX=NULL;
+		for[ i = 1 to N-1 ] {
+			if(rcv[i].vote!=NULL&&rcv[i].vote!=?){
+				cnt = 1;
+				for[ j = i+1 to N ]{
+					if(rcv[j].vote==rcv[i].vote)
+						cnt=cnt+1;
+				};
+				if(cnt>maxcnt){
+					maxcnt=cnt;
+					tmpX=rcv[i].vote;
+				};
+			};
+		};
+		if (maxcnt > (N+3*t)/2)
+			DECIDE(tmpX);
+		if (maxcnt > (N-t)/2){
+			candidate = tmpX;
+			sendcandidate=true;
+		};
+};
+
+Round {
+	SendPart
+		if(sendcandidate == true)
+			send(<candidate>, All);								/* CANDIDATE */
+	TransitionPart
+		cnt = 0;
+		for [i = 1 to N]
+			if(rcv[i].candidate == ?)
+				cnt = cnt + 1;
+		if(cnt >= t+1)
+			x = rand;
+		candidate = ?;
+		sendcandidate = false;
+};
+
+Invariant {		/* beginning of every phase */
+	for [ i = 1 to N ] {
+		assume(candidate[i] == ?);
+		assume(sendcandidate[i] == false);
+	};
+};
+Univalence {	/* x = v for more than (n+t)/2 correct processes */
+	cnt = 0;	
+	for [ i = 1 to N ] {
+		if(x[i] == v && iscorrect[i])
+			cnt = cnt + 1 ;
+	};
+	assert(cnt > (N+t)/2);
+};
+
