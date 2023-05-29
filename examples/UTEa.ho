@@ -1,12 +1,14 @@
 Algorithm UTEa;
 Variable
 	V x;
-	V' vote = ?;
+	Vt vote = ?;
 	hidden V tmpX;
 	hidden VArray sortedX;
 	hidden int i,j,cnt,maxcnt;
 	hidden constant T,E,a;
 Conditions{
+	assert(x >= 1 && x <= N);	
+	assert((vote >= 1 && vote <= N) || vote == ?);
 	assert(E < N && E >= N/2+a);
 	assert(T < N && T >= N/2+a);
 	assert(ahosize <= a);				/* 条件非常宽松，所有进程都可能发送错误消息，没有进程一定是正确进程 */

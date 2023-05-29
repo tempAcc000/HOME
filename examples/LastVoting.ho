@@ -1,7 +1,7 @@
 Algorithm LastVoting;
 Variable
 	V x = Vp;
-	V' vote = ?;
+	Vt vote = ?;
 	bool commit = false;
 	bool ready = false;
 	TS ts = 0;
@@ -11,6 +11,8 @@ Variable
 	hidden TSArray sortedTs;
 	hidden int i, j, idx;
 Conditions{
+	assert(x >= 1 && x <= N);		/* 1-N indicates N different values */
+	assert((vote >= 1 && vote <= N) || vote == ?);
 	assert(shosize==hosize);
 };
 Round {

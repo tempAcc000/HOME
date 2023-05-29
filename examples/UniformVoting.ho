@@ -1,0 +1,82 @@
+Algorithm UniformVoting;
+Variable
+	V x;
+	Vt vote;
+	hidden V minX;
+	hidden Vt tmpVote;
+	hidden int i;
+	hidden bool flag;
+Conditions{
+	assert(x >= 1 && x <= N);	
+	assert((vote >= 1 && vote <= N) || vote == ?);
+	assert(krsize>=1);
+	assert(ahosize == 0);
+};
+Round {
+	SendPart
+		send(<x>, All);
+	TransitionPart
+		flag = true;
+		minX = NULL;
+		for[i = 1 to N ]{								/* 取最小值并判断是否所有x都一致 */
+			if(rcv[i].x != NULL){
+				if(minX != NULL && rcv[i].x != minX)
+					flag = false;
+				if(minX == NULL || (minX != NULL && rcv[i].x < minX))
+					minX = rcv[i].x;
+			};
+		};
+		if(minX != NULL)
+			x=minX;
+		if(flag == true && minX != NULL)
+			vote=minX;
+};
+Round{
+	SendPart
+		send(<x,vote>, All);
+	TransitionPart
+		flag=false;
+		for[i = 1 to N ]{
+			if( rcv[i].vote != NULL && rcv[i].vote!=? ){			/* 此处取最后一个非空的vote值，也可以取其他vote值 */
+				x=rcv[i].vote;
+				flag=true;
+			};
+		};
+		
+		if(flag == false){										/* 取最小的x值 */
+			minX = NULL;
+			for[i = 1 to N]{
+				if(rcv[i].x != NULL){
+					if(minX == NULL || minX < rcv[i].x)
+						minX = rcv[i].x;
+				};	
+			};
+			if(minX != NULL)
+				x=minX;
+		};
+		
+		if(flag){													/* 如果有非NULL且非?的vote值 */
+			tmpVote = NULL;
+			for [ i = 1 to N ] {
+				if(rcv[i].vote != NULL){
+					if(tmpVote == NULL && rcv[i].vote != ?)
+						tmpVote = rcv[i].vote;
+					if(rcv[i].vote == ? || (tmpVote != NULL && rcv[i].vote !=tmpVote) )		/* 如果有空的或不同的vote值，不做decide */
+						flag = false;
+				};
+			};
+			if(flag && tmpVote != ? && tmpVote != NULL)
+				DECIDE(tmpVote);
+		};
+
+		vote=?;
+};
+
+Invariant{
+	for[i= 1 to N]
+		assume(vote[i] == ?);
+};
+Univalence{
+	for[ i= 1 to N ]											/* 若一个进程决定了值v，nosplit或nekrounds可以保证所有x值都是v */
+		assert(x[i] == v);
+};

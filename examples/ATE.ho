@@ -7,7 +7,8 @@ Variable
 	hidden int i, j, maxcnt,cnt;
 	hidden constant T,E,a;
 Conditions{
-	assert(ahosize <= a);				/* 条件非常宽松，所有进程都可能发送错误消息，没有进程一定是正确进程 */
+	assert(x >= 1 && x <= N);	
+	assert(ahosize <= a);			/* any process can be the faulty process*/	
 	assert(N > E);
 	assert(T < N && T >= 2*(N+2*a-E));
 	assert(a >= 0 && 4*a < N);

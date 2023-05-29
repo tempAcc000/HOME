@@ -1,11 +1,12 @@
 Algorithm OneThirdRule;
 Variable
-	V x = Vp;
+	V x;
 	hidden V tmpX;
 	hidden VArray sortedX;
 	hidden intArray cntX;
-	hidden int i, j,maxcnt,cnt,validcnt;
+	hidden int i, j,maxcnt,cnt;
 Conditions{
+	assert(x >= 1 && x <= N);	
 	assert(hosize == shosize);
 };
 
@@ -13,7 +14,7 @@ Round {
 	SendPart
 		send(<x>, All);
 	TransitionPart
-		if(hosize > 2/3*N){
+		if(hosize > 2*N/3){
 			for [ i = 1 to N ] {
 				sortedX[i] = rcv[i].x;
 				cntX[i] = 1;

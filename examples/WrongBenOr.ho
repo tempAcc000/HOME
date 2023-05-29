@@ -58,7 +58,7 @@ Round {
 			};
 		};
 		
-		if(maxcnt >= t+1){
+		if(maxcnt >= t){ 			 /*Wrong  t+1 -> t*/
 			x = tmpX;
 			if(cntD > (N+t)/2)
 				DECIDE(x);
